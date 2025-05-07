@@ -1,70 +1,55 @@
 pipeline {
-    agent any  // Runs on any available agent
+    agent any
 
     environment {
-        // Set your Docker Hub credentials and repository information
-        DOCKER_IMAGE = "tobilobaojo57/my-node-app"  // Your Docker Hub username and repo name
-        DOCKER_TAG = "latest"  // Tag your image as 'latest' or use a version tag
-        DOCKER_REGISTRY = "https://index.docker.io/v1/"  // Docker Hub registry URL
-        DOCKER_CREDENTIALS = "dockerhub-creds"  // Jenkins credential ID for Docker Hub
+        DOCKER_IMAGE = "tobilobaojo/my-node-app"
+        DOCKER_TAG = "latest"
+        DOCKER_REGISTRY = "https://index.docker.io/v1/"
+        DOCKER_CREDENTIALS = "dockerhub-creds" // Replace with your actual Jenkins credential ID
     }
 
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    // Checkout the code from GitHub repository
-                    checkout scm
-                }
+                checkout scm
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    // Build the Docker image with 'latest' tag
-                    echo "Building Docker Image with tag: ${DOCKER_TAG}..."
-                    sh """
-                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-                    """
-                }
+                echo "Building Docker Image with tag: ${DOCKER_TAG}..."
+                bat """
+                    docker build -t %DOCKER_IMAGE%:%DOCKER_TAG% .
+                """
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                script {
-                    // Login to Docker Hub using Jenkins credentials
-                    echo "Logging into Docker Hub..."
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh """
-                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD} ${DOCKER_REGISTRY}
-                        """
-                    }
+                withCredentials([usernamePassword(credentialsId: env.DOCKER_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    bat """
+                        echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                    """
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    // Push the Docker image to Docker Hub with 'latest' tag
-                    echo "Pushing Docker Image to Docker Hub..."
-                    sh """
-                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                    """
-                }
+                bat """
+                    docker push %DOCKER_IMAGE%:%DOCKER_TAG%
+                """
             }
         }
     }
 
     post {
         success {
-            echo "Docker Image successfully pushed to Docker Hub with tag: ${DOCKER_TAG}!"
+            echo "Image pushed to Docker Hub as ${DOCKER_IMAGE}:${DOCKER_TAG}"
         }
         failure {
-            echo "The pipeline failed. Please check the logs for errors."
+            echo "Pipeline failed. Check error logs above."
         }
     }
 }
-
+              
