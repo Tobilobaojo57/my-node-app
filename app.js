@@ -1,0 +1,17 @@
+require('dotenv').config();
+const express = require('express');
+const app = express();
+
+// Middleware
+app.use(express.json());
+
+// Routes
+app.get('/', (req, res) => {
+  res.send('Hello from your Node.js app!');
+});
+
+// Start server
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`server running at http://localhost:${PORT}`);
+});
